@@ -1,0 +1,44 @@
+QLabel#versionLabel {
+    background-color: #303030;
+    color: #fc9803;
+    font-size: 15px;
+    font-weight: bold
+}
+
+QTabWidget::pane { /* The tab widget frame */
+    border-top: 2px solid #000000;
+    border-bottom: #000000;
+    position: absolute;
+    top: 0em;
+    margin-right: 1px;
+}
+
+QTabWidget::tab-bar {
+    alignment: center;
+    border-bottom: transparent;
+}
+
+QTabWidget::tab {
+    padding: 20px;
+}
+
+QTabBar::tab {
+    background-color: #303030;
+    border: 2px solid #303030;
+    border-bottom-color: #03c6fc; /* same as the pane color */
+    padding: 10px 70px 10px 70px;
+    font-size: 15px;
+    font-weight: bold;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    color: #03c6fc;
+}
+
+QTabBar::tab:selected {
+    color: #03c6fc;
+    background-color: #000000;
+    border: 2px solid #000000;
+    border-bottom-color: #000000; /* same as the pane color */
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}

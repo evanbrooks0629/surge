@@ -1,0 +1,19 @@
+Color pallette:
+    - white: #ffffff
+    - black: #000000
+    - blue: #03c6fc
+    - orange: #fc9803
+
+Font: Moon (use bold for headings, light for normal text)
+
+Windows:
+    - Main window --> made
+    - Add task --> working on
+    - Edit task --> working on
+    - Add account
+    - Edit account
+    - Add billing
+    - Edit billing
+    - Add proxy
+    - Edit proxy
+
