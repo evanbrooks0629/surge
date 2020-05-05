@@ -1,85 +1,75 @@
 import time
+import sys
+import traceback
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from threading import Thread
 from multiprocessing.pool import ThreadPool
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from handlers import proxy_handler
 
 
-class ProxyTester:
-    def __init__(self, port, ip):
-        self.port = port
-        self.ip = ip
-
-    def test_proxy(self):
-        PROXY = self.ip + ":" + self.port
-        return_list = []
-        try:
-            start = time.time()
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument('--proxy-server=http://%s' % PROXY)
-            chrome_options.add_argument('--headless')
-            chrome = webdriver.Chrome(options=chrome_options, executable_path='/usr/local/bin/chromedriver')
-            try:
-                chrome.get("http://google.com")
-                if chrome.title.lower() == 'google':
-                    chrome.quit()
-                    return_list.append(True)
-                    return_list.append(time.time() - start)
-                    return return_list
-                else:
-                    chrome.quit()
-                    return_list.append(False)
-                    return return_list
-            except:
-                return_list.append(False)
-                return return_list
-        except:
-            return_list.append(False)
-            return return_list
+class WorkerSignals(QObject):
+    finished = pyqtSignal(list)
+    result = pyqtSignal()
 
 
-class ProxiesTester():
-    def __init__(self, proxy_list):
-        self.proxy_list = proxy_list
-        # proxy_list = [["port", "ip], ["port", "ip], ["port", "ip]]
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
 
-    def test_proxies(self, i):
+    def proxy_test(self, i):
+        self.proxy_list = proxy_handler.get_all_proxies()
         port = self.proxy_list[i][0]
         ip = self.proxy_list[i][1]
         PROXY = ip + ":" + port
         return_list = []
         try:
-            start = time.time()
             chrome_options = webdriver.ChromeOptions()
             chrome_options.add_argument('--proxy-server=http://%s' % PROXY)
             chrome_options.add_argument('--headless')
             chrome = webdriver.Chrome(options=chrome_options, executable_path='/usr/local/bin/chromedriver')
             try:
-                chrome.get("http://google.com")
-                if chrome.title.lower() == 'google':
+                chrome.get("http://ping-test.net/mobile/speed_test")
+                WebDriverWait(chrome, 30).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="tester"]/div[1]'))
+                ).click()
+                time.sleep(10)
+                speed = WebDriverWait(chrome, 10).until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="tester"]/div[12]/div[2]/span[1]'))
+                )
+                speed = int(speed.text)
+                if speed:
                     chrome.quit()
                     return_list.append(True)
-                    return_list.append(time.time() - start)
+                    return_list.append(speed)
+                    return_list.append(i)
                     return return_list
                 else:
                     chrome.quit()
                     return_list.append(False)
+                    return_list.append(i)
                     return return_list
             except:
                 return_list.append(False)
+                return_list.append(i)
                 return return_list
         except:
             return_list.append(False)
+            return_list.append(i)
             return return_list
 
-    def proxy_threads(self):
-        threads = []
-        results = []
-        pool = ThreadPool(processes=len(self.proxy_list))
-        for i in range(0, len(self.proxy_list)):
-            async_result = pool.apply_async(self.test_proxies, (i,))
-            threads.append(async_result)
-        for e in range(0, len(self.proxy_list)):
-            return_val = threads[e].get()
-            results.append(return_val)
-        return results
-
+    @pyqtSlot(list)
+    def run(self):
+        self.signals.result.emit()
+        self.all_proxies = proxy_handler.get_proxy(*self.args)
+        result = self.proxy_test(*self.args)
+        self.signals.finished.emit(result)

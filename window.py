@@ -1,5 +1,7 @@
 import sys
 import json
+import time
+import threading
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -13,9 +15,11 @@ from classes.add_accounts_window import AddAccountsWindow
 from classes.edit_accounts_window import EditAccountsWindow
 from classes.add_proxy_window import AddProxyWindow
 from classes.edit_proxy_window import EditProxyWindow
-from classes.proxy_tester import ProxyTester, ProxiesTester
+from classes.proxies_tester import Worker as ProxiesWorker
+from classes.proxy_tester import Worker as ProxyWorker
 from classes.verification_window import KeyVerificationWindow
-from classes.task_runner import TaskRunner
+from workers.supreme_t_shirt_workers import Worker as SupremeTShirtWorker
+from workers.supreme_accessories_workers import Worker as SupremeAccessoriesWorker
 
 from handlers import task_handler, account_handler, proxy_handler, settings_handler, import_handler, export_handler
 
@@ -31,6 +35,9 @@ class Window(QWidget):
             "background-color: #303030;"
         )
         self.setWindowTitle('Surge')
+        #self.setWindowFlag(Qt.FramelessWindowHint) #removes window
+        # find out how to add a close windsow button and a way
+        # to move it around
         self.UI()
 
     def UI(self):
@@ -233,7 +240,7 @@ class Window(QWidget):
         )
         self.statusLabel.setFixedWidth(150)
         self.statusLabel.setAlignment(Qt.AlignLeft)
-        self.controlsLabel = QLabel('          Controls')
+        self.controlsLabel = QLabel('            Controls')
         self.controlsLabel.setStyleSheet(
             "font-size: 15px;"
             "color: #03c6fc;"
@@ -315,6 +322,7 @@ class Window(QWidget):
         self.addTasksButton.clicked.connect(self.addTasksWindow)
         self.editTasksButton.clicked.connect(self.editTasksWindow)
         self.startTasksButton.clicked.connect(self.startTasks)
+        self.stopTasksButton.clicked.connect(self.stopTasks)
 
     def resetDashboardUI(self):
         while self.tasksBox.count():
@@ -404,13 +412,14 @@ class Window(QWidget):
                 )
                 self.start.setAlignment(Qt.AlignLeft)
                 self.start.setFixedWidth(120)
-                self.status = QLabel("Ready to start...              ")
+                self.status = QLabel("Ready to start...")
                 self.status.setStyleSheet(
                     "color: #ffffff;"
                     "font-weight: bold;"
                 )
                 self.status.setAlignment(Qt.AlignLeft)
                 self.status.setObjectName("status")
+                self.status.setFixedWidth(180)
                 self.editButtonTasks = QPushButton()
                 self.editButtonTasks.setIcon(QIcon('images/iconedit.icns'))
                 self.editButtonTasks.setStyleSheet(
@@ -511,40 +520,125 @@ class Window(QWidget):
             except:
                 pass
 
-    def startTasks(self):
+    def execute_task_run_fn(self):
+        pass
+
+    def task_run_started(self):
         all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
         for task_widget in all_tasks_widgets:
             try:
                 all_status = task_widget.findChildren(QLabel, "status")
                 for e in range(0, len(all_status)):
-                    all_status[e].setText("Running now...                 ")
+                    all_status[e].setText("Running now...")
                     all_status[e].setStyleSheet(
                         "color: #fc9803;"
                         "font-weight: bold;"
                     )
             except:
                 pass
-        all_tasks = task_handler.get_all_tasks()
-        all_accounts = account_handler.get_all_accounts()
-        all_proxies = proxy_handler.get_all_proxies()
-        index = 0
-        for task in all_tasks:
+
+    def task_run_searching(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
             try:
-                task[3] = task[3][:-2]
-                task[4] = all_accounts[index]
-                task.remove(task[5]) #remove bool
-                task.remove(task[5]) #remove start
-                task.append(all_proxies[index])
-                index += 1
-            except IndexError:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Searching for product")
+                all_status[i].setStyleSheet(
+                    "color: #FFFF00;"
+                    "font-weight: bold;"
+                )
+            except:
                 pass
+
+    def task_run_found(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Found product")
+                all_status[i].setStyleSheet(
+                    "color: #03c6fc;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_cart(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("At cart")
+                all_status[i].setStyleSheet(
+                    "color: #FF00FF;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_checkout(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Checking out")
+                all_status[i].setStyleSheet(
+                    "color: #0000FF;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_success(self, i, success):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                if success:
+                    all_status[i].setText("Product copped")
+                    all_status[i].setStyleSheet(
+                        "color: #00FF00;"
+                        "font-weight: bold;"
+                    )
+                else:
+                    all_status[i].setText("Error obtaining product")
+                    all_status[i].setStyleSheet(
+                        "color: red;"
+                        "font-weight: bold;"
+                    )
+            except:
+                pass
+
+    def startTasks(self):
         num_tasks = task_handler.get_num_tasks()
-        num_accounts = account_handler.get_num_accounts()
-        #num_proxies = proxy_handler.get_num_proxies()
-        if num_tasks <= num_accounts: # proxies will be added, use home ip for now
-            threads = TaskRunner(all_tasks, all_accounts, all_proxies)
-            threads.task_pool_executor()
-            # start threadpool and pass in args (shop, product -> str or list, size, delay, account -> list)
+
+        if num_tasks > 0:
+            self.tasks_thread_pool = QThreadPool()
+
+            all_tasks = task_handler.get_all_tasks()
+            if all_tasks[0][0] == 'Supreme (T-Shirts)':
+                self.worker = SupremeTShirtWorker(self.execute_task_run_fn)
+                self.worker.setAutoDelete(True)
+            elif all_tasks[0][0] == 'Supreme (Accessories)':
+                self.worker = SupremeAccessoriesWorker(self.execute_task_run_fn)
+                self.worker.setAutoDelete(True)
+
+            self.worker.signals.started.connect(self.task_run_started)
+            self.worker.signals.searching.connect(self.task_run_searching)
+            self.worker.signals.found.connect(self.task_run_found)
+            self.worker.signals.cart.connect(self.task_run_cart)
+            self.worker.signals.checkout.connect(self.task_run_checkout)
+            self.worker.signals.success.connect(self.task_run_success)
+            self.worker.signals.stopped.connect(self.task_run_stopped)
+
+            self.tasks_thread_pool.start(self.worker)
+
+    def stopTasks(self):
+        if self.tasks_thread_pool:
+            self.worker.kill_threads()
+
+    def task_run_stopped(self):
+        self.resetDashboardUI()
 
     def checkAllTasks(self):
         num_tasks = task_handler.get_num_tasks()
@@ -1201,7 +1295,7 @@ class Window(QWidget):
         self.proxiesTab.setLayout(self.proxies)
         self.refreshProxiesButton.clicked.connect(self.resetProxiesUI)
         self.addProxiesButton.clicked.connect(self.addProxyWindow)
-        self.testProxiesButton.clicked.connect(self.testProxies)
+        self.testProxiesButton.clicked.connect(self.proxies_tester)
 
     def resetProxiesUI(self):
         while self.proxiesBox.count():
@@ -1401,31 +1495,59 @@ class Window(QWidget):
         self.addProxyWindow = AddProxyWindow()
         self.addProxyWindow.show()
 
-    def testProxies(self):
+    # executes when progress is made (does nothing rn)
+    def execute_proxy_tests_fn(self, progress_callback):
+        pass
+
+    # executes when process starts
+    def show_proxy_tests_output(self):
         num_proxies = proxy_handler.get_num_proxies()
         if num_proxies > 0:
-            all_proxies = proxy_handler.get_all_proxies()
-            proxies = ProxiesTester(all_proxies)
-            results = proxies.proxy_threads() #[[arg], [arg], [arg]]
-            widgets7 = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
-            index = 0
-            for widget7 in widgets7:
-                statusLabels = widget7.findChildren(QLabel, "proxyStatus")
-                for statusLabel in statusLabels:
-                    if results[index][0] == True:
-                        results[index][1] = round(results[index][1], 2)
-                        statusLabel.setText(f"Valid:    {results[index][1]} seconds")
-                        statusLabel.setStyleSheet(
+
+            all_proxies_widgets = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
+            for proxy_widget in all_proxies_widgets:
+                try:
+                    all_proxy_status = proxy_widget.findChildren(QLabel, "proxyStatus")
+                    for e in range(0, len(all_proxy_status)):
+                        all_proxy_status[e].setText("Running now...                 ")
+                        all_proxy_status[e].setStyleSheet(
+                            "color: #fc9803;"
                             "font-weight: bold;"
-                            "color: green;"
                         )
-                    else:
-                        statusLabel.setText(f"Invalid")
-                        statusLabel.setStyleSheet(
-                            "font-weight: bold;"
-                            "color: red;"
-                        )
-                    index += 1
+                except:
+                    pass
+
+    # executes when process finishes
+    def proxy_testing_thread_complete(self, result, i):
+        widgets7 = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
+        for widget7 in widgets7:
+            statusLabels = widget7.findChildren(QLabel, "proxyStatus")
+            if result[0] == True:
+                result[1] = round(result[1], 2)
+                statusLabels[i].setText(f"Valid:    {result[1]} ms")
+                statusLabels[i].setStyleSheet(
+                    "font-weight: bold;"
+                    "color: #00FF00;"
+                )
+            else:
+                statusLabels[i].setText(f"Invalid")
+                statusLabels[i].setStyleSheet(
+                    "font-weight: bold;"
+                    "color: red;"
+                )
+        # set values as the status
+
+    # actual method that starts threads
+    def proxies_tester(self):
+        num_proxies = proxy_handler.get_num_proxies()
+        if num_proxies > 0:
+            self.proxies_thread_pool = QThreadPool()
+
+            worker = ProxiesWorker(self.execute_proxy_tests_fn)
+            worker.signals.result.connect(self.show_proxy_tests_output)
+            worker.signals.finished.connect(self.proxy_testing_thread_complete)
+
+            self.proxies_thread_pool.start(worker)
 
     def editProxy(self, objects):
         sender = self.sender()
@@ -1456,6 +1578,46 @@ class Window(QWidget):
         proxy_handler.insert_proxies(all_proxies)
         self.resetProxiesUI()
 
+    def execute_proxy_test_fn(self, progress_callback):
+        pass
+
+    def show_proxy_test_output(self, i):
+        num_proxies = proxy_handler.get_num_proxies()
+        if num_proxies > 0:
+
+            all_proxies_widgets = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
+            for proxy_widget in all_proxies_widgets:
+                try:
+                    all_proxy_status = proxy_widget.findChildren(QLabel, "proxyStatus")
+                    all_proxy_status[i].setText("Running now...                 ")
+                    all_proxy_status[i].setStyleSheet(
+                        "color: #fc9803;"
+                        "font-weight: bold;"
+                    )
+                except:
+                    pass
+
+    def proxy_test_thread_complete(self, result):
+        widgets6 = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
+        for widget6 in widgets6:
+            try:
+                statusLabels = widget6.findChildren(QLabel, 'proxyStatus')
+                if result[0] == True:
+                    result[1] = round(result[1], 2)
+                    statusLabels[result[2]].setText(f"Valid:    {result[1]} ms")
+                    statusLabels[result[2]].setStyleSheet(
+                        "font-weight: bold;"
+                        "color: #00FF00;"
+                    )
+                else:
+                    statusLabels[result[1]].setText("Invalid")
+                    statusLabels[result[1]].setStyleSheet(
+                        "font-weight: bold;"
+                        "color: red;"
+                    )
+            except:
+                pass
+
     def testProxy(self, objects):
         sender = self.sender()
         index = 0
@@ -1465,30 +1627,15 @@ class Window(QWidget):
                 i = index
                 break
             index += 1
-        test_proxy = proxy_handler.get_proxy(i) # ["port", "ip"]
-        port = test_proxy[0]
-        ip = test_proxy[1]
-        proxy = ProxyTester(port, ip)
-        status = proxy.test_proxy()
-        widgets6 = self.proxiesScrollView.findChildren(QWidget, "proxiesWidget")
-        for widget6 in widgets6:
-            try:
-                statusLabels = widget6.findChildren(QLabel, 'proxyStatus')
-                if status[0] == True:
-                    status[1] = round(status[1], 2)
-                    statusLabels[i].setText(f"Valid:    {status[1]} seconds")
-                    statusLabels[i].setStyleSheet(
-                        "font-weight: bold;"
-                        "color: green;"
-                    )
-                else:
-                    statusLabels[i].setText("Invalid")
-                    statusLabels[i].setStyleSheet(
-                        "font-weight: bold;"
-                        "color: red;"
-                    )
-            except:
-                pass
+
+        self.proxy_thread_pool = QThreadPool()
+
+        worker = ProxyWorker(self.execute_proxy_test_fn, i)
+        worker.signals.result.connect(lambda: self.show_proxy_test_output(i))
+        worker.signals.finished.connect(self.proxy_test_thread_complete)
+
+        self.proxy_thread_pool.start(worker)
+
 
     # SETTINGS
 
@@ -2111,7 +2258,7 @@ class Window(QWidget):
         self.settingsFooterBox = QVBoxLayout()
         self.validLabelSettings = QLabel("Status: valid")
         self.validLabelSettings.setStyleSheet(
-            "color: green;"
+            "color: #00FF00;"
             "font-weight: bold;"
             "font-size: 15px;"
         )
