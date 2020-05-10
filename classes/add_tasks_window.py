@@ -27,7 +27,7 @@ class AddTasksWindow(QWidget):
             "font-weight: bold"
         )
         self.shopsComboBox = QComboBox()
-        self.shopsComboBox.addItems(['Select Shop', 'Cactus Jack', 'KITH', 'Bape', 'Supreme (T-Shirts)', 'Supreme (Accessories)', 'Supreme (Tops / Sweaters)'])
+        self.shopsComboBox.addItems(['Select Shop', 'Supreme (T-Shirts)', 'Supreme (Accessories)', 'Supreme (Tops / Sweaters)', 'Supreme (Jackets)', 'Supreme (Shirts)', 'Supreme (Sweatshirts)', 'Supreme (Pants)', 'Supreme (Shorts)', 'Supreme (Hats)', 'Supreme (Bags)', 'Supreme (Shoes)', 'Supreme (Skate)'])
         self.shopsComboBox.setStyleSheet(
             """
             QComboBox {

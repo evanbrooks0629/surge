@@ -18,8 +18,19 @@ from classes.edit_proxy_window import EditProxyWindow
 from classes.proxies_tester import Worker as ProxiesWorker
 from classes.proxy_tester import Worker as ProxyWorker
 from classes.verification_window import KeyVerificationWindow
-from workers.supreme_t_shirt_workers import Worker as SupremeTShirtWorker
+
+from workers.supreme_t_shirts_workers import Worker as SupremeTShirtsWorker
 from workers.supreme_accessories_workers import Worker as SupremeAccessoriesWorker
+from workers.supreme_bags_workers import Worker as SupremeBagsWorker
+from workers.supreme_tops_sweaters_workers import Worker as SupremeTopsSweatersWorker
+from workers.supreme_hats_workers import Worker as SupremeHatsWorker
+from workers.supreme_pants_workers import Worker as SupremePantsWorker
+from workers.supreme_shoes_workers import Worker as SupremeShoesWorker
+from workers.supreme_skate_workers import Worker as SupremeSkateWorker
+from workers.supreme_shorts_workers import Worker as SupremeShortsWorker
+from workers.supreme_shirts_workers import Worker as SupremeShirtsWorker
+from workers.supreme_sweatshirts_workers import Worker as SupremeSweatshirtsWorker
+from workers.supreme_jackets_workers import Worker as SupremeJacketsWorker
 
 from handlers import task_handler, account_handler, proxy_handler, settings_handler, import_handler, export_handler
 
@@ -520,9 +531,6 @@ class Window(QWidget):
             except:
                 pass
 
-    def execute_task_run_fn(self):
-        pass
-
     def task_run_started(self):
         all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
         for task_widget in all_tasks_widgets:
@@ -610,32 +618,185 @@ class Window(QWidget):
                 pass
 
     def startTasks(self):
+        all_tasks = task_handler.get_all_tasks()
+        all_accounts = account_handler.get_all_accounts()
+        all_proxies = proxy_handler.get_all_proxies()
+
         num_tasks = task_handler.get_num_tasks()
+        num_accounts = account_handler.get_num_accounts()
+        num_proxies = proxy_handler.get_num_proxies()
+
+        default_settings = settings_handler.get_all_settings()
+        default_account = default_settings["default account"]
+
+        settings = [default_settings["safe mode"], default_settings["monitor delay"], default_settings["retry delay"]]
 
         if num_tasks > 0:
+            # check for proxy settings, do later
+
+            if num_accounts < num_tasks:
+                diff = num_tasks - num_accounts
+                for _ in range(diff):
+                    all_accounts.append(default_account)
+
+            if num_proxies < num_tasks:
+                diff = num_tasks - num_proxies
+                for _ in range(diff):
+                    all_proxies.append(False)
+
             self.tasks_thread_pool = QThreadPool()
 
-            all_tasks = task_handler.get_all_tasks()
-            if all_tasks[0][0] == 'Supreme (T-Shirts)':
-                self.worker = SupremeTShirtWorker(self.execute_task_run_fn)
-                self.worker.setAutoDelete(True)
-            elif all_tasks[0][0] == 'Supreme (Accessories)':
-                self.worker = SupremeAccessoriesWorker(self.execute_task_run_fn)
-                self.worker.setAutoDelete(True)
+            self.workers = []
 
-            self.worker.signals.started.connect(self.task_run_started)
-            self.worker.signals.searching.connect(self.task_run_searching)
-            self.worker.signals.found.connect(self.task_run_found)
-            self.worker.signals.cart.connect(self.task_run_cart)
-            self.worker.signals.checkout.connect(self.task_run_checkout)
-            self.worker.signals.success.connect(self.task_run_success)
-            self.worker.signals.stopped.connect(self.task_run_stopped)
+            supreme_accessories_tasks = []
+            supreme_accessories_accounts = []
+            supreme_accessories_proxies = []
 
-            self.tasks_thread_pool.start(self.worker)
+            supreme_jackets_tasks = []
+            supreme_jackets_accounts = []
+            supreme_jackets_proxies = []
+
+            supreme_shirts_tasks = []
+            supreme_shirts_accounts = []
+            supreme_shirts_proxies = []
+
+            supreme_tops_sweaters_tasks = []
+            supreme_tops_sweaters_accounts = []
+            supreme_tops_sweaters_proxies = []
+
+            supreme_sweatshirts_tasks = []
+            supreme_sweatshirts_accounts = []
+            supreme_sweatshirts_proxies = []
+
+            supreme_pants_tasks = []
+            supreme_pants_accounts = []
+            supreme_pants_proxies = []
+
+            supreme_shorts_tasks = []
+            supreme_shorts_accounts = []
+            supreme_shorts_proxies = []
+
+            supreme_hats_tasks = []
+            supreme_hats_accounts = []
+            supreme_hats_proxies = []
+
+            supreme_bags_tasks = []
+            supreme_bags_accounts = []
+            supreme_bags_proxies = []
+
+            supreme_shoes_tasks = []
+            supreme_shoes_accounts = []
+            supreme_shoes_proxies = []
+
+            supreme_skate_tasks = []
+            supreme_skate_accounts = []
+            supreme_skate_proxies = []
+
+            supreme_t_shirts_tasks = []
+            supreme_t_shirts_accounts = []
+            supreme_t_shirts_proxies = []
+
+            index = 0
+            for task in all_tasks:
+                if task[0] == 'Supreme (Accessories)':
+                    supreme_accessories_tasks.append(task)
+                    supreme_accessories_accounts.append(all_accounts[index])
+                    supreme_accessories_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Jackets)':
+                    supreme_jackets_tasks.append(task)
+                    supreme_jackets_accounts.append(all_accounts[index])
+                    supreme_jackets_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Shirts)':
+                    supreme_shirts_tasks.append(task)
+                    supreme_shirts_accounts.append(all_accounts[index])
+                    supreme_shirts_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Tops / Sweaters)':
+                    supreme_tops_sweaters_tasks.append(task)
+                    supreme_tops_sweaters_accounts.append(all_accounts[index])
+                    supreme_tops_sweaters_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Pants)':
+                    supreme_pants_tasks.append(task)
+                    supreme_pants_accounts.append(all_accounts[index])
+                    supreme_pants_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Shorts)':
+                    supreme_shorts_tasks.append(task)
+                    supreme_shorts_accounts.append(all_accounts[index])
+                    supreme_shorts_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Hats)':
+                    supreme_hats_tasks.append(task)
+                    supreme_hats_accounts.append(all_accounts[index])
+                    supreme_hats_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Bags)':
+                    supreme_bags_tasks.append(task)
+                    supreme_bags_accounts.append(all_accounts[index])
+                    supreme_bags_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Sweatshirts)':
+                    supreme_sweatshirts_tasks.append(task)
+                    supreme_sweatshirts_accounts.append(all_accounts[index])
+                    supreme_sweatshirts_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Shoes)':
+                    supreme_shoes_tasks.append(task)
+                    supreme_shoes_accounts.append(all_accounts[index])
+                    supreme_shoes_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (Skate)':
+                    supreme_skate_tasks.append(task)
+                    supreme_skate_accounts.append(all_accounts[index])
+                    supreme_skate_proxies.append(all_proxies[index])
+                if task[0] == 'Supreme (T-Shirts)':
+                    supreme_t_shirts_tasks.append(task)
+                    supreme_t_shirts_accounts.append(all_accounts[index])
+                    supreme_t_shirts_proxies.append(all_proxies[index])
+
+
+            for task in all_tasks:
+                if task[0] == 'Supreme (Accessories)':
+                    self.worker = SupremeAccessoriesWorker(settings, supreme_accessories_tasks, supreme_accessories_accounts, supreme_accessories_proxies)
+                if task[0] == 'Supreme (Jackets)':
+                    self.worker = SupremeJacketsWorker(settings, supreme_jackets_tasks, supreme_jackets_accounts, supreme_jackets_proxies)
+                if task[0] == 'Supreme (Shirts)':
+                    self.worker = SupremeShirtsWorker(settings, supreme_shirts_tasks, supreme_shirts_accounts, supreme_shirts_proxies)
+                if task[0] == 'Supreme (Tops / Sweaters)':
+                    self.worker = SupremeTopsSweatersWorker(settings, supreme_tops_sweaters_tasks, supreme_tops_sweaters_accounts, supreme_tops_sweaters_proxies)
+                if task[0] == 'Supreme (Sweatshirts)':
+                    self.worker = SupremeSweatshirtsWorker(settings, supreme_sweatshirts_tasks, supreme_sweatshirts_accounts, supreme_sweatshirts_proxies)
+                if task[0] == 'Supreme (Pants)':
+                    self.worker = SupremePantsWorker(settings, supreme_pants_tasks, supreme_pants_accounts, supreme_pants_proxies)
+                if task[0] == 'Supreme (Shorts)':
+                    self.worker = SupremeShortsWorker(settings, supreme_shorts_tasks, supreme_shorts_accounts, supreme_shorts_proxies)
+                if task[0] == 'Supreme (Hats)':
+                    self.worker = SupremeHatsWorker(settings, supreme_hats_tasks, supreme_hats_accounts, supreme_hats_proxies)
+                if task[0] == 'Supreme (Bags)':
+                    self.worker = SupremeBagsWorker(settings, supreme_bags_tasks, supreme_bags_accounts, supreme_bags_proxies)
+                if task[0] == 'Supreme (Shoes)':
+                    self.worker = SupremeShoesWorker(settings, supreme_shoes_tasks, supreme_shoes_accounts, supreme_shoes_proxies)
+                if task[0] == 'Supreme (Skate)':
+                    self.worker = SupremeSkateWorker(settings, supreme_skate_tasks, supreme_skate_accounts, supreme_skate_proxies)
+                if task[0] == 'Supreme (T-Shirts)':
+                    self.worker = SupremeTShirtsWorker(settings, supreme_t_shirts_tasks, supreme_t_shirts_accounts, supreme_t_shirts_proxies)
+
+
+                self.worker.setAutoDelete(True)
+                self.worker.signals.started.connect(self.task_run_started)
+                self.worker.signals.searching.connect(self.task_run_searching)
+                self.worker.signals.found.connect(self.task_run_found)
+                self.worker.signals.cart.connect(self.task_run_cart)
+                self.worker.signals.checkout.connect(self.task_run_checkout)
+                self.worker.signals.success.connect(self.task_run_success)
+                self.worker.signals.stopped.connect(self.task_run_stopped)
+
+                self.workers.append(self.worker)
+
+            for worker in self.workers:
+                self.tasks_thread_pool.start(worker)
 
     def stopTasks(self):
-        if self.tasks_thread_pool:
-            self.worker.kill_threads()
+        num_tasks = task_handler.get_num_tasks()
+        if num_tasks > 0:
+            try:
+                if self.tasks_thread_pool:
+                    self.worker.kill_threads()
+            except:
+                pass
 
     def task_run_stopped(self):
         self.resetDashboardUI()

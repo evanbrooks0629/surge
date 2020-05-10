@@ -43,13 +43,13 @@ class Worker(QRunnable):
         self.accounts = accounts
         self.proxies = proxies
         self.signals = WorkerSignals()
-        self.url = 'https://www.supremenewyork.com/shop/all/accessories'
+        self.url = 'https://www.supremenewyork.com/shop/all/hats'
         self.safe_mode = self.settings[0]
         self.monitor_delay = self.settings[1]
         self.retry_delay = self.settings[2]
         self.terminate = False # if true, returns to end the thread
 
-    def supreme_accessories(self, index):
+    def supreme_hats(self, index):
         if not self.terminate:
             self.product = self.tasks[index][1]
             self.size = self.tasks[index][2]
@@ -236,7 +236,7 @@ class Worker(QRunnable):
         self.signals.started.emit()
         self.workers = []
         for i in range(0, len(self.tasks)):
-            thread = Thread(target=self.supreme_accessories, args=[i])
+            thread = Thread(target=self.supreme_hats, args=[i])
             self.workers.append(thread)
         for worker in self.workers:
             worker.start()
