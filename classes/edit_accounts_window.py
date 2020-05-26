@@ -4,6 +4,8 @@ from PyQt5.QtGui import *
 
 from handlers import account_handler
 
+import sys, os
+
 
 class EditAccountsWindow(QWidget):
     def __init__(self, index, first, last, email, phone, street, city, state, zip, number, exp, cvv, name, billingStreet, billingCity, billingState, billingZip):
@@ -36,6 +38,20 @@ class EditAccountsWindow(QWidget):
         self.UI()
 
     def UI(self):
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            application_path = appstr
         self.mainLayout = QVBoxLayout()
         self.mainBody = QHBoxLayout()
         self.accountLayout = QGridLayout()
@@ -471,14 +487,26 @@ class EditAccountsWindow(QWidget):
         self.buttonBox = QHBoxLayout()
         self.editAccountsButton = QPushButton("    Edit Account")
         self.editAccountsButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #fc9803;"
-            "font-size: 15px;"
-            "padding: 10px 50px 10px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 20px 10px 20px;
+                font-weight: bold;
+                font-size: 20px;
+                margin-bottom: 0px;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
-        self.editAccountsButton.setIcon(QIcon('images/iconeditblack.icns'))
+        img_path = os.path.join(application_path, 'images/iconeditblack.icns')
+        self.editAccountsButton.setIcon(QIcon(img_path))
         self.buttonBox.addStretch()
         self.buttonBox.addWidget(self.editAccountsButton)
         self.buttonBox.addStretch()

@@ -33,13 +33,23 @@ class AddProxyWindow(QWidget):
         )
         self.addProxyButton = QPushButton("＋    Add Proxies")
         self.addProxyButton.setStyleSheet(
-            "color: #000000;"
-            "font-size: 20px;"
-            "font-weight: bold;"
-            "background-color: #fc9803;"
-            "padding: 10px 20px 10px 20px;"
-            "border-radius: 5px;"
-            "margin-bottom: 0px;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 20px 10px 20px;
+                font-weight: bold;
+                font-size: 20px;
+                margin-bottom: 0px;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.layout.addWidget(self.mainLabel)
         self.layout.addWidget(self.proxyBox)

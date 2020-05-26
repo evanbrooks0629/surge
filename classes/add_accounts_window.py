@@ -433,12 +433,23 @@ class AddAccountsWindow(QWidget):
         self.buttonBox = QHBoxLayout()
         self.addAccountsButton = QPushButton("＋    Add Account")
         self.addAccountsButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #fc9803;"
-            "font-size: 15px;"
-            "padding: 10px 50px 10px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 20px 10px 20px;
+                font-weight: bold;
+                font-size: 20px;
+                margin-bottom: 0px;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.buttonBox.addStretch()
         self.buttonBox.addWidget(self.addAccountsButton)

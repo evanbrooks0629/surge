@@ -3,6 +3,8 @@ from PyQt5.QtGui import *
 
 from handlers import proxy_handler
 
+import sys, os
+
 
 class EditProxyWindow(QWidget):
     def __init__(self, index, port, ip):
@@ -21,6 +23,20 @@ class EditProxyWindow(QWidget):
         self.UI()
 
     def UI(self):
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            application_path = appstr
         layout = QGridLayout()
         layout.setColumnStretch(1, 4)
         layout.setColumnStretch(2, 4)
@@ -57,7 +73,8 @@ class EditProxyWindow(QWidget):
         layout.addWidget(self.ipLabel, 1, 0)
         layout.addWidget(self.ipInput, 1, 1, 1, 2)
         self.editProxyButton = QPushButton("    Edit Proxy")
-        self.editProxyButton.setIcon(QIcon("images/iconeditblack.icns"))
+        img_path = os.path.join(application_path, 'images/iconeditblack.icns')
+        self.editProxyButton.setIcon(QIcon(img_path))
         self.editProxyButton.setStyleSheet(
             "color: #000000;"
             "font-size: 20px;"

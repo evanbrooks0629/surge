@@ -2,6 +2,7 @@ import sys
 import json
 import time
 import threading
+import os
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -19,18 +20,8 @@ from classes.proxies_tester import Worker as ProxiesWorker
 from classes.proxy_tester import Worker as ProxyWorker
 from classes.verification_window import KeyVerificationWindow
 
-from workers.supreme_t_shirts_workers import Worker as SupremeTShirtsWorker
-from workers.supreme_accessories_workers import Worker as SupremeAccessoriesWorker
-from workers.supreme_bags_workers import Worker as SupremeBagsWorker
-from workers.supreme_tops_sweaters_workers import Worker as SupremeTopsSweatersWorker
-from workers.supreme_hats_workers import Worker as SupremeHatsWorker
-from workers.supreme_pants_workers import Worker as SupremePantsWorker
-from workers.supreme_shoes_workers import Worker as SupremeShoesWorker
-from workers.supreme_skate_workers import Worker as SupremeSkateWorker
-from workers.supreme_shorts_workers import Worker as SupremeShortsWorker
-from workers.supreme_shirts_workers import Worker as SupremeShirtsWorker
-from workers.supreme_sweatshirts_workers import Worker as SupremeSweatshirtsWorker
-from workers.supreme_jackets_workers import Worker as SupremeJacketsWorker
+from workers.time_check_worker import Worker as TimeCheckWorker
+from workers.task_workers import Worker as TaskWorker
 
 from handlers import task_handler, account_handler, proxy_handler, settings_handler, import_handler, export_handler
 
@@ -49,6 +40,21 @@ class Window(QWidget):
         #self.setWindowFlag(Qt.FramelessWindowHint) #removes window
         # find out how to add a close windsow button and a way
         # to move it around
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            self.application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            #application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            self.application_path = appstr
+        self.css_path = os.path.join(self.application_path, 'main.css')
         self.UI()
 
     def UI(self):
@@ -67,32 +73,46 @@ class Window(QWidget):
         self.show()
 
     def headerUI(self):
+        settings = settings_handler.get_all_settings()
         self.surgeLabel = QLabel()
-        pic = QPixmap('images/headerLogo.png')
+        img_path = os.path.join(self.application_path, 'images/headerLogo.png')
+        pic = QPixmap(img_path)
         self.surgeLabel.setPixmap(pic)
         self.surgeLabel.setAlignment(Qt.AlignLeft)
+        if settings["webhook"] == '':
+            self.userLabel = QLabel("Welcome user")
+        else:
+            self.userLabel = QLabel(f"Welcome {settings['webhook']}")
+        self.userLabel.setAlignment(Qt.AlignHCenter)
+        self.userLabel.setObjectName("userLabel")
+        self.userLabel.setStyleSheet(open(self.css_path).read())
         self.versionLabel = QLabel("Surge Bot Version 1.0 (Beta)")
         self.versionLabel.setAlignment(Qt.AlignRight)
         self.versionLabel.setObjectName("versionLabel")
-        self.versionLabel.setStyleSheet(open('main.css').read())
+        self.versionLabel.setStyleSheet(open(self.css_path).read())
         self.headerBox.addWidget(self.surgeLabel)
+        self.headerBox.addWidget(self.userLabel)
         self.headerBox.addWidget(self.versionLabel)
 
     def tabUI(self):
         self.tabs = QTabWidget()
         self.dashboardTab = QTabBar()
         self.tabs.addTab(self.dashboardTab, "          Dashboard          ")
-        self.tabs.setTabIcon(0, QIcon("images/dashboardTabIcon.icns"))
+        img_path = os.path.join(self.application_path, 'images/dashboardTabIcon.icns')
+        self.tabs.setTabIcon(0, QIcon(img_path))
         self.accountsTab = QTabBar()
         self.tabs.addTab(self.accountsTab, "          Accounts          ")
-        self.tabs.setTabIcon(1, QIcon("images/accountsTabIcon.icns"))
+        img_path = os.path.join(self.application_path, 'images/accountsTabIcon.icns')
+        self.tabs.setTabIcon(1, QIcon(img_path))
         self.proxiesTab = QTabBar()
         self.tabs.addTab(self.proxiesTab, "          Proxies          ")
-        self.tabs.setTabIcon(2, QIcon("images/proxiesTabIcon.icns"))
+        img_path = os.path.join(self.application_path, 'images/proxiesTabIcon.icns')
+        self.tabs.setTabIcon(2, QIcon(img_path))
         self.settingsTab = QTabBar()
         self.tabs.addTab(self.settingsTab, "          Settings          ")
-        self.tabs.setTabIcon(3, QIcon("images/settingsTabIcon.icns"))
-        self.tabs.setStyleSheet(open('main.css').read())
+        img_path = os.path.join(self.application_path, 'images/settingsTabIcon.icns')
+        self.tabs.setTabIcon(3, QIcon(img_path))
+        self.tabs.setStyleSheet(open(self.css_path).read())
         self.dashboardTab.setStyleSheet(
             "background-color: #000000;"
             "border-bottom-left-radius: 5px;"
@@ -125,46 +145,94 @@ class Window(QWidget):
             "font-weight: bold;"
         )
         self.quickTasksButton = QPushButton("Quick tasks")
-        self.quickTasksButton.setIcon(QIcon('images/lightningicon.icns'))
+        img_path = os.path.join(self.application_path, 'images/lightningicon.icns')
+        self.quickTasksButton.setIcon(QIcon(img_path))
         self.quickTasksButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #fc9803;"
-            "border: 2px solid #fc9803;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #fc9803;
+                border: 2px solid #fc9803;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #fc9803;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.selectAllTasksButton = QPushButton("Select All")
-        self.selectAllTasksButton.setIcon(QIcon('images/checkIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/checkIcon.icns')
+        self.selectAllTasksButton.setIcon(QIcon(img_path))
         self.selectAllTasksButton.setStyleSheet(
-            "background-color: #ffffff;"
-            "color: #000000;"
-            "border: 2px solid #ffffff;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border: 2px solid #ffffff;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+                border: 2px solid #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.selectAllTasksButton.hide()
         self.editTasksButton = QPushButton("Edit Tasks")
-        self.editTasksButton.setIcon(QIcon('images/editIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/editIcon.icns')
+        self.editTasksButton.setIcon(QIcon(img_path))
         self.editTasksButton.setStyleSheet(
-            "background-color: #03c6fc;"
-            "color: #000000;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #03c6fc;
+                color: #000000;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #03b2e3;
+                border: 2px solid #03b2e3;
+            }
+            QPushButton:pressed {
+                background-color: #03c6fc;
+            }
+            """
         )
         self.editTasksButton.hide()
         self.deleteTasksButton = QPushButton("Delete Tasks")
-        self.deleteTasksButton.setIcon(QIcon('images/trashIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/trashIcon.icns')
+        self.deleteTasksButton.setIcon(QIcon(img_path))
         self.deleteTasksButton.setStyleSheet(
-            "background-color: #fc9803;"
-            "color: #000000;"
-            "border: 2px solid #fc9803;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border: 2px solid #fc9803;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+                border: 2px solid #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.deleteTasksButton.hide()
         num_tasks = task_handler.get_num_tasks()
@@ -173,14 +241,26 @@ class Window(QWidget):
             self.editTasksButton.show()
             self.deleteTasksButton.show()
         self.refreshTasksButton = QPushButton("Refresh Feed")
-        self.refreshTasksButton.setIcon(QIcon('images/refreshIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/refreshIcon.icns')
+        self.refreshTasksButton.setIcon(QIcon(img_path))
         self.refreshTasksButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #03c6fc;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.refreshTasksButton.clicked.connect(self.resetDashboardUI)
         self.quickTasksButton.clicked.connect(self.quickTasksWindow)
@@ -200,17 +280,17 @@ class Window(QWidget):
             "font-weight: bold;"
             "padding-left: 1px;"
         )
-        self.shopLabel.setFixedWidth(150)
+        self.shopLabel.setFixedWidth(160)
         self.shopLabel.setAlignment(Qt.AlignLeft)
-        self.productLabel = QLabel('       Product')
+        self.productLabel = QLabel('                   Product')
         self.productLabel.setStyleSheet(
             "font-size: 15px;"
             "color: #03c6fc;"
             "font-weight: bold;"
         )
-        self.productLabel.setFixedWidth(130)
+        self.productLabel.setFixedWidth(140)
         self.productLabel.setAlignment(Qt.AlignLeft)
-        self.sizeLabel = QLabel('    Size')
+        self.sizeLabel = QLabel('                         Size')
         self.sizeLabel.setStyleSheet(
             "font-size: 15px;"
             "color: #03c6fc;"
@@ -218,14 +298,14 @@ class Window(QWidget):
         )
         self.sizeLabel.setFixedWidth(130)
         self.sizeLabel.setAlignment(Qt.AlignLeft)
-        self.delayLabel = QLabel('  Delay')
+        self.delayLabel = QLabel('           Delay')
         self.delayLabel.setStyleSheet(
             "font-size: 15px;"
             "color: #03c6fc;"
             "font-weight: bold;"
             "margin-left: -5px;"
         )
-        self.delayLabel.setFixedWidth(130)
+        self.delayLabel.setFixedWidth(120)
         self.delayLabel.setAlignment(Qt.AlignLeft)
         self.accountLabel = QLabel('Account')
         self.accountLabel.setStyleSheet(
@@ -241,9 +321,9 @@ class Window(QWidget):
             "color: #03c6fc;"
             "font-weight: bold;"
         )
-        self.startLabel.setFixedWidth(110)
+        self.startLabel.setFixedWidth(120)
         self.startLabel.setAlignment(Qt.AlignLeft)
-        self.statusLabel = QLabel(' Status')
+        self.statusLabel = QLabel('Status')
         self.statusLabel.setStyleSheet(
             "font-size: 15px;"
             "color: #03c6fc;"
@@ -294,30 +374,60 @@ class Window(QWidget):
         self.dashboardButtonsBox = QHBoxLayout()
         self.addTasksButton = QPushButton("＋    Add Tasks")
         self.addTasksButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #ffffff;"
-            "font-size: 15px;"
-            "padding: 10px 50px 7px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 50px 7px 50px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.startTasksButton = QPushButton("►    Start Tasks")
         self.startTasksButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #03c6fc;"
-            "font-size: 15px;"
-            "padding: 10px 50px 10px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #03c6fc;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 50px 10px 50px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #03b2e3;
+            }
+            QPushButton:pressed {
+                background-color: #03c6fc;
+            }
+            """
         )
         self.stopTasksButton = QPushButton("◼    Stop Tasks")
         self.stopTasksButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #fc9803;"
-            "font-size: 15px;"
-            "padding: 10px 50px 10px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 50px 10px 50px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.dashboardButtonsBox.addWidget(self.addTasksButton)
         self.dashboardButtonsBox.addWidget(self.startTasksButton)
@@ -332,8 +442,8 @@ class Window(QWidget):
         self.dashboardTab.setLayout(self.dashboard)
         self.addTasksButton.clicked.connect(self.addTasksWindow)
         self.editTasksButton.clicked.connect(self.editTasksWindow)
-        self.startTasksButton.clicked.connect(self.startTasks)
-        self.stopTasksButton.clicked.connect(self.stopTasks)
+        self.startTasksButton.clicked.connect(lambda: self.startTasks(True, 0, self.start_objects_list_tasks))
+        self.stopTasksButton.clicked.connect(lambda: self.stopTasks(True, 0))
 
     def resetDashboardUI(self):
         while self.tasksBox.count():
@@ -341,7 +451,7 @@ class Window(QWidget):
             if child.widget():
                 child.widget().deleteLater()
         num_tasks = task_handler.get_num_tasks()
-        if num_tasks != 0:
+        if num_tasks > 0:
             self.showTasks()
             self.selectAllTasksButton.show()
             self.editTasksButton.show()
@@ -361,6 +471,8 @@ class Window(QWidget):
     def showTasks(self):
         edit_objects_list_tasks = []
         delete_objects_list_tasks = []
+        self.start_objects_list_tasks = []
+        self.tasks_status_labels = []
         num_tasks = task_handler.get_num_tasks()
         all_tasks = task_handler.get_all_tasks()
         # first, resort them
@@ -377,7 +489,6 @@ class Window(QWidget):
                 task = all_tasks[i]
                 self.tasksWidgetBox = QWidget()
                 self.tasksWidgetBox.setStyleSheet(
-                    "background-color: #000000;"
                     "border-radius: 5px;"
                 )
                 self.taskLine = QHBoxLayout()
@@ -387,28 +498,28 @@ class Window(QWidget):
                     "font-weight: bold;"
                 )
                 self.shop.setAlignment(Qt.AlignLeft)
-                self.shop.setFixedWidth(120)
+                self.shop.setFixedWidth(160)
                 self.product = QLabel(task[1])
                 self.product.setStyleSheet(
                     "color: #ffffff;"
                     "font-weight: bold;"
                 )
                 self.product.setAlignment(Qt.AlignLeft)
-                self.product.setFixedWidth(120)
+                self.product.setFixedWidth(160)
                 self.size = QLabel(task[2])
                 self.size.setStyleSheet(
                     "color: #ffffff;"
                     "font-weight: bold;"
                 )
                 self.size.setAlignment(Qt.AlignLeft)
-                self.size.setFixedWidth(120)
+                self.size.setFixedWidth(80)
                 self.delay = QLabel(task[3])
                 self.delay.setStyleSheet(
                     "color: #ffffff;"
                     "font-weight: bold;"
                 )
                 self.delay.setAlignment(Qt.AlignLeft)
-                self.delay.setFixedWidth(120)
+                self.delay.setFixedWidth(80)
                 self.account = QLabel(task[4])
                 self.account.setStyleSheet(
                     "color: #ffffff;"
@@ -423,7 +534,11 @@ class Window(QWidget):
                 )
                 self.start.setAlignment(Qt.AlignLeft)
                 self.start.setFixedWidth(120)
-                self.status = QLabel("Ready to start...")
+                self.status = QLabel()
+                if task[5] == 'Manual       ':
+                    self.status.setText("Ready to start...")
+                else:
+                    self.status.setText(f"Starting at {task[5]}")
                 self.status.setStyleSheet(
                     "color: #ffffff;"
                     "font-weight: bold;"
@@ -431,35 +546,70 @@ class Window(QWidget):
                 self.status.setAlignment(Qt.AlignLeft)
                 self.status.setObjectName("status")
                 self.status.setFixedWidth(180)
+                self.tasks_status_labels.append(self.status)
                 self.editButtonTasks = QPushButton()
-                self.editButtonTasks.setIcon(QIcon('images/iconedit.icns'))
+                img_path = os.path.join(self.application_path, 'images/iconedit.icns')
+                self.editButtonTasks.setIcon(QIcon(img_path))
                 self.editButtonTasks.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 self.editButtonTasks.setObjectName("editButtonTasks")
                 edit_objects_list_tasks.append(self.editButtonTasks)
                 self.startButtonTasks = QPushButton()
-                self.startButtonTasks.setIcon(QIcon('images/iconstart.icns'))
+                img_path = os.path.join(self.application_path, 'images/iconstart.icns')
+                self.startButtonTasks.setIcon(QIcon(img_path))
                 self.startButtonTasks.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 self.startButtonTasks.setObjectName("startButtonTasks")
+                self.start_objects_list_tasks.append(self.startButtonTasks)
                 self.deleteButtonTasks = QPushButton()
-                self.deleteButtonTasks.setIcon(QIcon('images/icontrash.icns'))
+                img_path = os.path.join(self.application_path, 'images/icontrash.icns')
+                self.deleteButtonTasks.setIcon(QIcon(img_path))
                 self.deleteButtonTasks.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 self.deleteButtonTasks.setObjectName("deleteButtonTasks")
                 delete_objects_list_tasks.append(self.deleteButtonTasks)
@@ -480,9 +630,9 @@ class Window(QWidget):
                 self.taskLine.addStretch()
                 self.taskLine.addWidget(self.status)
                 self.taskLine.addStretch()
-                self.taskLine.addWidget(self.editButtonTasks)
-                self.taskLine.addStretch()
                 self.taskLine.addWidget(self.startButtonTasks)
+                self.taskLine.addStretch()
+                self.taskLine.addWidget(self.editButtonTasks)
                 self.taskLine.addStretch()
                 self.taskLine.addWidget(self.deleteButtonTasks)
                 self.taskLine.addStretch()
@@ -531,6 +681,60 @@ class Window(QWidget):
             except:
                 pass
 
+        tasksWidgetStarts = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for taskWidgetStart in tasksWidgetStarts:
+            try:
+                startButtons = taskWidgetStart.findChildren(QPushButton, 'startButtonTasks')
+                for e in range(0, len(startButtons)):
+                    startButtons[e].clicked.connect(lambda: self.startTask(self.start_objects_list_tasks))
+            except:
+                pass
+
+        all_tasks = task_handler.get_all_tasks()
+        if len(all_tasks) > 0:
+            if all_tasks[0][5] == 'False':
+                try:
+                    if self.timer_thread_pool:
+                        self.timer_worker.reset_timer()
+                except:
+                    pass
+                self.check_start_time(self.start_objects_list_tasks)
+
+    def get_start_times(self):
+        all_tasks = task_handler.get_all_tasks()
+        num_tasks = task_handler.get_num_tasks()
+        time_list = []
+        if num_tasks > 0:
+            for task in all_tasks:
+                if task[5] == "False":
+                    time = task[6]
+                    time = time.split(" ")
+                    start_time = time[0]
+                    if time[1] == 'PM':
+                        start_times = start_time.split(":")
+                        hour = int(start_times[0])
+                        hour += 12
+                        hour = str(hour)
+                        time = f"{hour}:{start_times[1]}"
+                        time_list.append(time)
+                    else:
+                        time_list.append(start_time)
+                else:
+                    time_list.append(False)
+        return time_list
+
+    def check_start_time(self, objects):
+        time_list = self.get_start_times()
+
+        self.timer_thread_pool = QThreadPool()
+
+        self.timer_worker = TimeCheckWorker(time_list) # import worker class as...
+
+        self.timer_worker.setAutoDelete(True)
+        self.timer_worker.signals.timematch.connect(lambda: self.startTasks(True, 0, objects)) # signal should be if time is equal
+
+        self.timer_thread_pool.start(self.timer_worker)
+
     def task_run_started(self):
         all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
         for task_widget in all_tasks_widgets:
@@ -542,6 +746,19 @@ class Window(QWidget):
                         "color: #fc9803;"
                         "font-weight: bold;"
                     )
+            except:
+                pass
+
+    def task_run_started_ind(self, e):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[e].setText("Running now...")
+                all_status[e].setStyleSheet(
+                    "color: #fc9803;"
+                    "font-weight: bold;"
+                )
             except:
                 pass
 
@@ -617,7 +834,72 @@ class Window(QWidget):
             except:
                 pass
 
-    def startTasks(self):
+    def task_run_cart_error(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Cart Error")
+                all_status[i].setStyleSheet(
+                    "color: red;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_captcha_error(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Captcha Error")
+                all_status[i].setStyleSheet(
+                    "color: red;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_card_declined(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Card Declined")
+                all_status[i].setStyleSheet(
+                    "color: red;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_sold_out(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Sold Out")
+                all_status[i].setStyleSheet(
+                    "color: red;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def task_run_restock(self, i):
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            try:
+                all_status = task_widget.findChildren(QLabel, "status")
+                all_status[i].setText("Trying Restock")
+                all_status[i].setStyleSheet(
+                    "color: #fc9803;"
+                    "font-weight: bold;"
+                )
+            except:
+                pass
+
+    def startTasks(self, is_all, i, objects):
         all_tasks = task_handler.get_all_tasks()
         all_accounts = account_handler.get_all_accounts()
         all_proxies = proxy_handler.get_all_proxies()
@@ -629,174 +911,112 @@ class Window(QWidget):
         default_settings = settings_handler.get_all_settings()
         default_account = default_settings["default account"]
 
-        settings = [default_settings["safe mode"], default_settings["monitor delay"], default_settings["retry delay"]]
+        if num_accounts < num_tasks:
+            diff = num_tasks - num_accounts
+            for _ in range(diff):
+                all_accounts.append(default_account)
 
-        if num_tasks > 0:
-            # check for proxy settings, do later
+        if num_proxies < num_tasks:
+            diff = num_tasks - num_proxies
+            for _ in range(diff):
+                all_proxies.append(False)
 
-            if num_accounts < num_tasks:
-                diff = num_tasks - num_accounts
-                for _ in range(diff):
-                    all_accounts.append(default_account)
+        self.tasks_thread_pool = QThreadPool()
 
-            if num_proxies < num_tasks:
-                diff = num_tasks - num_proxies
-                for _ in range(diff):
-                    all_proxies.append(False)
-
-            self.tasks_thread_pool = QThreadPool()
-
-            self.workers = []
-
-            supreme_accessories_tasks = []
-            supreme_accessories_accounts = []
-            supreme_accessories_proxies = []
-
-            supreme_jackets_tasks = []
-            supreme_jackets_accounts = []
-            supreme_jackets_proxies = []
-
-            supreme_shirts_tasks = []
-            supreme_shirts_accounts = []
-            supreme_shirts_proxies = []
-
-            supreme_tops_sweaters_tasks = []
-            supreme_tops_sweaters_accounts = []
-            supreme_tops_sweaters_proxies = []
-
-            supreme_sweatshirts_tasks = []
-            supreme_sweatshirts_accounts = []
-            supreme_sweatshirts_proxies = []
-
-            supreme_pants_tasks = []
-            supreme_pants_accounts = []
-            supreme_pants_proxies = []
-
-            supreme_shorts_tasks = []
-            supreme_shorts_accounts = []
-            supreme_shorts_proxies = []
-
-            supreme_hats_tasks = []
-            supreme_hats_accounts = []
-            supreme_hats_proxies = []
-
-            supreme_bags_tasks = []
-            supreme_bags_accounts = []
-            supreme_bags_proxies = []
-
-            supreme_shoes_tasks = []
-            supreme_shoes_accounts = []
-            supreme_shoes_proxies = []
-
-            supreme_skate_tasks = []
-            supreme_skate_accounts = []
-            supreme_skate_proxies = []
-
-            supreme_t_shirts_tasks = []
-            supreme_t_shirts_accounts = []
-            supreme_t_shirts_proxies = []
-
-            index = 0
-            for task in all_tasks:
-                if task[0] == 'Supreme (Accessories)':
-                    supreme_accessories_tasks.append(task)
-                    supreme_accessories_accounts.append(all_accounts[index])
-                    supreme_accessories_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Jackets)':
-                    supreme_jackets_tasks.append(task)
-                    supreme_jackets_accounts.append(all_accounts[index])
-                    supreme_jackets_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Shirts)':
-                    supreme_shirts_tasks.append(task)
-                    supreme_shirts_accounts.append(all_accounts[index])
-                    supreme_shirts_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Tops / Sweaters)':
-                    supreme_tops_sweaters_tasks.append(task)
-                    supreme_tops_sweaters_accounts.append(all_accounts[index])
-                    supreme_tops_sweaters_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Pants)':
-                    supreme_pants_tasks.append(task)
-                    supreme_pants_accounts.append(all_accounts[index])
-                    supreme_pants_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Shorts)':
-                    supreme_shorts_tasks.append(task)
-                    supreme_shorts_accounts.append(all_accounts[index])
-                    supreme_shorts_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Hats)':
-                    supreme_hats_tasks.append(task)
-                    supreme_hats_accounts.append(all_accounts[index])
-                    supreme_hats_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Bags)':
-                    supreme_bags_tasks.append(task)
-                    supreme_bags_accounts.append(all_accounts[index])
-                    supreme_bags_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Sweatshirts)':
-                    supreme_sweatshirts_tasks.append(task)
-                    supreme_sweatshirts_accounts.append(all_accounts[index])
-                    supreme_sweatshirts_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Shoes)':
-                    supreme_shoes_tasks.append(task)
-                    supreme_shoes_accounts.append(all_accounts[index])
-                    supreme_shoes_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (Skate)':
-                    supreme_skate_tasks.append(task)
-                    supreme_skate_accounts.append(all_accounts[index])
-                    supreme_skate_proxies.append(all_proxies[index])
-                if task[0] == 'Supreme (T-Shirts)':
-                    supreme_t_shirts_tasks.append(task)
-                    supreme_t_shirts_accounts.append(all_accounts[index])
-                    supreme_t_shirts_proxies.append(all_proxies[index])
-
-
-            for task in all_tasks:
-                if task[0] == 'Supreme (Accessories)':
-                    self.worker = SupremeAccessoriesWorker(settings, supreme_accessories_tasks, supreme_accessories_accounts, supreme_accessories_proxies)
-                if task[0] == 'Supreme (Jackets)':
-                    self.worker = SupremeJacketsWorker(settings, supreme_jackets_tasks, supreme_jackets_accounts, supreme_jackets_proxies)
-                if task[0] == 'Supreme (Shirts)':
-                    self.worker = SupremeShirtsWorker(settings, supreme_shirts_tasks, supreme_shirts_accounts, supreme_shirts_proxies)
-                if task[0] == 'Supreme (Tops / Sweaters)':
-                    self.worker = SupremeTopsSweatersWorker(settings, supreme_tops_sweaters_tasks, supreme_tops_sweaters_accounts, supreme_tops_sweaters_proxies)
-                if task[0] == 'Supreme (Sweatshirts)':
-                    self.worker = SupremeSweatshirtsWorker(settings, supreme_sweatshirts_tasks, supreme_sweatshirts_accounts, supreme_sweatshirts_proxies)
-                if task[0] == 'Supreme (Pants)':
-                    self.worker = SupremePantsWorker(settings, supreme_pants_tasks, supreme_pants_accounts, supreme_pants_proxies)
-                if task[0] == 'Supreme (Shorts)':
-                    self.worker = SupremeShortsWorker(settings, supreme_shorts_tasks, supreme_shorts_accounts, supreme_shorts_proxies)
-                if task[0] == 'Supreme (Hats)':
-                    self.worker = SupremeHatsWorker(settings, supreme_hats_tasks, supreme_hats_accounts, supreme_hats_proxies)
-                if task[0] == 'Supreme (Bags)':
-                    self.worker = SupremeBagsWorker(settings, supreme_bags_tasks, supreme_bags_accounts, supreme_bags_proxies)
-                if task[0] == 'Supreme (Shoes)':
-                    self.worker = SupremeShoesWorker(settings, supreme_shoes_tasks, supreme_shoes_accounts, supreme_shoes_proxies)
-                if task[0] == 'Supreme (Skate)':
-                    self.worker = SupremeSkateWorker(settings, supreme_skate_tasks, supreme_skate_accounts, supreme_skate_proxies)
-                if task[0] == 'Supreme (T-Shirts)':
-                    self.worker = SupremeTShirtsWorker(settings, supreme_t_shirts_tasks, supreme_t_shirts_accounts, supreme_t_shirts_proxies)
-
-
-                self.worker.setAutoDelete(True)
-                self.worker.signals.started.connect(self.task_run_started)
-                self.worker.signals.searching.connect(self.task_run_searching)
-                self.worker.signals.found.connect(self.task_run_found)
-                self.worker.signals.cart.connect(self.task_run_cart)
-                self.worker.signals.checkout.connect(self.task_run_checkout)
-                self.worker.signals.success.connect(self.task_run_success)
-                self.worker.signals.stopped.connect(self.task_run_stopped)
-
-                self.workers.append(self.worker)
-
-            for worker in self.workers:
-                self.tasks_thread_pool.start(worker)
-
-    def stopTasks(self):
-        num_tasks = task_handler.get_num_tasks()
-        if num_tasks > 0:
+        if is_all:
             try:
-                if self.tasks_thread_pool:
-                    self.worker.kill_threads()
+                for object in objects:
+                    img_path = os.path.join(self.application_path, 'images/stoptaskIcon.icns')
+                    object.setIcon(QIcon(img_path))
             except:
                 pass
+            self.worker = TaskWorker(True, i, all_tasks, all_accounts, all_proxies)  # this worker is used to seperate functions away from interface and it runs however many tasks in the class
+        else:
+            img_path = os.path.join(self.application_path, 'images/stopTaskIcon.icns')
+            objects[i].setIcon(QIcon(img_path))
+            self.worker = TaskWorker(False, i, all_tasks, all_accounts, all_proxies)
+
+        self.worker.signals.started.connect(self.task_run_started)
+        self.worker.signals.started_ind.connect(self.task_run_started_ind)
+        self.worker.signals.searching.connect(self.task_run_searching)
+        self.worker.signals.found.connect(self.task_run_found)
+        self.worker.signals.cart.connect(self.task_run_cart)
+        self.worker.signals.checkout.connect(self.task_run_checkout)
+        self.worker.signals.success.connect(self.task_run_success)
+        self.worker.signals.stopped.connect(self.task_run_stopped)
+        self.worker.signals.stopped_ind.connect(self.task_run_stopped_ind)
+        self.worker.signals.cart_error.connect(self.task_run_cart_error)
+        self.worker.signals.captcha_error.connect(self.task_run_captcha_error)
+        self.worker.signals.card_declined.connect(self.task_run_card_declined)
+        self.worker.signals.sold_out.connect(self.task_run_sold_out)
+        self.worker.signals.restock.connect(self.task_run_restock)
+
+        self.tasks_thread_pool.start(self.worker)
+
+
+    def startTask(self, objects):
+        stop_task = False
+        try:
+            sender = self.sender()
+            index = 0
+            i = 0
+            for object in objects:
+                if sender == object:
+                    i = index
+                    break
+                index += 1
+            if self.tasks_thread_pool:
+                stop_task = True
+            if stop_task:
+                img_path = os.path.join(self.application_path, 'images/iconstart.icns')
+                objects[i].setIcon(QIcon(img_path))
+                self.stopTasks(False, i)
+            else:
+                img_path = os.path.join(self.application_path, 'images/stopTaskIcon.icns')
+                objects[i].setIcon(QIcon(img_path))
+                self.startTasks(False, i, objects)
+        except:
+            sender = self.sender()
+            index = 0
+            i = 0
+            for object in objects:
+                if sender == object:
+                    i = index
+                    break
+                index += 1
+            img_path = os.path.join(self.application_path, 'images/stopTaskIcon.icns')
+            objects[i].setIcon(QIcon(img_path))
+            self.startTasks(False, i, objects)
+
+    def stopTasks(self, is_all, index):
+        num_tasks = task_handler.get_num_tasks()
+        if num_tasks > 0:
+            if is_all:
+                try:
+                    if self.tasks_thread_pool:
+                        self.worker.stop_task(True, index)
+                except:
+                    pass
+            else:
+                try:
+                    if self.tasks_thread_pool:
+                        self.worker.stop_task(False, index)
+                except:
+                    pass
+
+    def task_run_stopped_ind(self, i):
+        all_tasks = task_handler.get_tasks_as_string()
+        all_tasks_widgets = self.tasksScrollView.findChildren(QWidget, "tasksWidget")
+        for task_widget in all_tasks_widgets:
+            all_status = task_widget.findChildren(QLabel, "status")
+            if all_tasks[i][5] == 'Manual       ':
+                all_status[i].setText("Ready to start...")
+            else:
+                all_status[i].setText(f"Starting at {all_tasks[i][5]}")
+            all_status[i].setStyleSheet(
+                "color: #ffffff;"
+                "font-weight: bold;"
+            )
 
     def task_run_stopped(self):
         self.resetDashboardUI()
@@ -908,45 +1128,93 @@ class Window(QWidget):
             "font-weight: bold;"
         )
         self.importAccountsButton = QPushButton("Import")
-        self.importAccountsButton.setIcon(QIcon("images/importicon.icns"))
+        img_path = os.path.join(self.application_path, 'images/importicon.icns')
+        self.importAccountsButton.setIcon(QIcon(img_path))
         self.importAccountsButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #03c6fc;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.exportAccountsButton = QPushButton("Export")
-        self.exportAccountsButton.setIcon(QIcon("images/exporticon.icns"))
+        img_path = os.path.join(self.application_path, 'images/exporticon.icns')
+        self.exportAccountsButton.setIcon(QIcon(img_path))
         self.exportAccountsButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #03c6fc;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.selectAllAccountsButton = QPushButton("Select All")
-        self.selectAllAccountsButton.setIcon(QIcon('images/checkIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/checkIcon.icns')
+        self.selectAllAccountsButton.setIcon(QIcon(img_path))
         self.selectAllAccountsButton.setStyleSheet(
-            "background-color: #ffffff;"
-            "color: #000000;"
-            "border: 2px solid #ffffff;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border: 2px solid #ffffff;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+                border: 2px solid #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.selectAllAccountsButton.hide()
         self.deleteAccountsButton = QPushButton("Delete Accounts")
-        self.deleteAccountsButton.setIcon(QIcon('images/trashIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/trashIcon.icns')
+        self.deleteAccountsButton.setIcon(QIcon(img_path))
         self.deleteAccountsButton.setStyleSheet(
-            "background-color: #fc9803;"
-            "color: #000000;"
-            "border: 2px solid #fc9803;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border: 2px solid #fc9803;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+                border: 2px solid #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.deleteAccountsButton.hide()
         num_accounts = account_handler.get_num_accounts()
@@ -954,14 +1222,26 @@ class Window(QWidget):
             self.selectAllAccountsButton.show()
             self.deleteAccountsButton.show()
         self.refreshAccountsButton = QPushButton("Refresh Feed")
-        self.refreshAccountsButton.setIcon(QIcon('images/refreshIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/refreshIcon.icns')
+        self.refreshAccountsButton.setIcon(QIcon(img_path))
         self.refreshAccountsButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #03c6fc;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.accountsHeaderBox = QVBoxLayout()
         self.accountsHeaderBoxTop = QHBoxLayout()
@@ -1042,12 +1322,22 @@ class Window(QWidget):
         self.accountsButtonsBox = QHBoxLayout()
         self.addAccountsButton = QPushButton("＋    Add Account")
         self.addAccountsButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #ffffff;"
-            "font-size: 15px;"
-            "padding: 10px 110px 7px 110px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 110px 7px 110px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.accountsButtonsBox.addStretch()
         self.accountsButtonsBox.addWidget(self.addAccountsButton)
@@ -1129,24 +1419,46 @@ class Window(QWidget):
                 self.billing.setFixedWidth(200)
 
                 self.editButtonAccounts = QPushButton()
-                self.editButtonAccounts.setIcon(QIcon('images/iconedit.icns'))
+                img_path = os.path.join(self.application_path, 'images/iconedit.icns')
+                self.editButtonAccounts.setIcon(QIcon(img_path))
                 self.editButtonAccounts.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 edit_objects_list.append(self.editButtonAccounts)
                 self.editButtonAccounts.setObjectName("editButtonAccounts")
                 self.deleteButtonAccounts = QPushButton()
-                self.deleteButtonAccounts.setIcon(QIcon('images/icontrash.icns'))
+                img_path = os.path.join(self.application_path, 'images/icontrash.icns')
+                self.deleteButtonAccounts.setIcon(QIcon(img_path))
                 self.deleteButtonAccounts.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 delete_objects_list.append(self.deleteButtonAccounts)
                 self.deleteButtonAccounts.setObjectName("deleteButtonAccounts")
@@ -1312,25 +1624,49 @@ class Window(QWidget):
             "font-weight: bold;"
         )
         self.selectAllProxiesButton = QPushButton("Select All")
-        self.selectAllProxiesButton.setIcon(QIcon('images/checkIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/checkIcon.icns')
+        self.selectAllProxiesButton.setIcon(QIcon(img_path))
         self.selectAllProxiesButton.setStyleSheet(
-            "background-color: #ffffff;"
-            "color: #000000;"
-            "border: 2px solid #ffffff;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border: 2px solid #ffffff;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+                border: 2px solid #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.selectAllProxiesButton.hide()
         self.deleteProxiesButton = QPushButton("Delete Proxies")
-        self.deleteProxiesButton.setIcon(QIcon('images/trashIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/trashIcon.icns')
+        self.deleteProxiesButton.setIcon(QIcon(img_path))
         self.deleteProxiesButton.setStyleSheet(
-            "background-color: #fc9803;"
-            "color: #000000;"
-            "border: 2px solid #fc9803;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border: 2px solid #fc9803;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+                border: 2px solid #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.deleteProxiesButton.hide()
         num_proxies = proxy_handler.get_num_proxies()
@@ -1338,14 +1674,26 @@ class Window(QWidget):
             self.selectAllProxiesButton.show()
             self.deleteProxiesButton.show()
         self.refreshProxiesButton = QPushButton("Refresh Feed")
-        self.refreshProxiesButton.setIcon(QIcon('images/refreshIcon.icns'))
+        img_path = os.path.join(self.application_path, 'images/refreshIcon.icns')
+        self.refreshProxiesButton.setIcon(QIcon(img_path))
         self.refreshProxiesButton.setStyleSheet(
-            "background-color: #000000;"
-            "color: #03c6fc;"
-            "border: 2px solid #03c6fc;"
-            "border-radius: 5px;"
-            "padding: 5px 20px 5px 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #000000;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 20px 5px 20px;
+                font-weight: bold;
+            }
+            QPushButton::hover {
+                background-color: #101010;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.proxiesHeaderBox = QVBoxLayout()
         self.proxiesHeaderBoxTop = QHBoxLayout()
@@ -1416,22 +1764,43 @@ class Window(QWidget):
         self.proxiesButtonsBox = QHBoxLayout()
         self.addProxiesButton = QPushButton("＋    Add Proxies")
         self.addProxiesButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #ffffff;"
-            "font-size: 15px;"
-            "padding: 10px 50px 7px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #ffffff;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 110px 7px 110px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #dcdcdc;
+            }
+            QPushButton:pressed {
+                background-color: #ffffff;
+            }
+            """
         )
         self.testProxiesButton = QPushButton("    Test Proxies")
-        self.testProxiesButton.setIcon(QIcon('images/testicon.icns'))
+        img_path = os.path.join(self.application_path, 'images/testicon.icns')
+        self.testProxiesButton.setIcon(QIcon(img_path))
         self.testProxiesButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #03c6fc;"
-            "font-size: 15px;"
-            "padding: 12px 50px 10px 50px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #03c6fc;
+                color: #000000;
+                border-radius: 5px;
+                padding: 12px 110px 10px 110px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #03b2e3;
+            }
+            QPushButton:pressed {
+                background-color: #03c6fc;
+            }
+            """
         )
         self.captchaHarvesterButton = QPushButton("    Captcha Harvester")
         self.captchaHarvesterButton.setIcon(QIcon('images/harvesticon.icns'))
@@ -1443,9 +1812,11 @@ class Window(QWidget):
             "border-radius: 5px;"
             "font-weight: bold;"
         )
+        self.proxiesButtonsBox.addStretch()
         self.proxiesButtonsBox.addWidget(self.addProxiesButton)
         self.proxiesButtonsBox.addWidget(self.testProxiesButton)
-        self.proxiesButtonsBox.addWidget(self.captchaHarvesterButton)
+        self.proxiesButtonsBox.addStretch()
+        #self.proxiesButtonsBox.addWidget(self.captchaHarvesterButton)
         self.proxiesBodyBox = QVBoxLayout()
         self.proxiesBodyBox.addWidget(self.proxiesScrollView)
         self.proxiesBodyBox.addLayout(self.proxiesButtonsBox)
@@ -1519,35 +1890,68 @@ class Window(QWidget):
                 self.status2.setObjectName("proxyStatus")
 
                 self.editButtonProxies = QPushButton()
-                self.editButtonProxies.setIcon(QIcon('images/iconedit.icns'))
+                img_path = os.path.join(self.application_path, 'images/iconedit.icns')
+                self.editButtonProxies.setIcon(QIcon(img_path))
                 self.editButtonProxies.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 edit_objects_list_proxies.append(self.editButtonProxies)
                 self.editButtonProxies.setObjectName("editButtonProxies")
                 self.testButtonProxies = QPushButton()
-                self.testButtonProxies.setIcon(QIcon('images/icontest.icns'))
+                img_path = os.path.join(self.application_path, 'images/icontest.icns')
+                self.testButtonProxies.setIcon(QIcon(img_path))
                 self.testButtonProxies.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 test_objects_list_proxies.append(self.testButtonProxies)
                 self.testButtonProxies.setObjectName("testButtonProxies")
                 self.deleteButtonProxies = QPushButton()
-                self.deleteButtonProxies.setIcon(QIcon('images/icontrash.icns'))
+                img_path = os.path.join(self.application_path, 'images/icontrash.icns')
+                self.deleteButtonProxies.setIcon(QIcon(img_path))
                 self.deleteButtonProxies.setStyleSheet(
-                    "color: #000000;"
-                    "background-color: #000000;"
-                    "border-radius: 5px;"
-                    "padding: 0px;"
-                    "font-weight: bold;"
+                    """
+                    QPushButton {
+                        background-color: #000000;
+                        color: #000000;
+                        border-radius: 5px;
+                        padding: 0px;
+                        font-weight: bold;
+                    }
+                    QPushButton::hover {
+                        background-color: #FF00FF;
+                    }
+                    QPushButton:pressed {
+                        background-color: #000000;
+                    }
+                    """
                 )
                 self.deleteButtonProxies.setObjectName("deleteButtonProxies")
                 delete_objects_list_proxies.append(self.deleteButtonProxies)
@@ -1962,12 +2366,22 @@ class Window(QWidget):
         self.emptyDashSettingsWidget7 = QLabel()
         self.defaultQuickTaskButton = QPushButton("Save")
         self.defaultQuickTaskButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #fc9803;"
-            "font-size: 15px;"
-            "padding: 5px 25px 5px 25px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                color: #000000;
+                background-color: #fc9803;
+                font-size: 15px;
+                padding: 5px 25px 5px 25px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.dashboardSettingsBox.addWidget(self.dashboardSettingsLabel, 0, 0, 0, 0)
         self.dashboardSettingsBox.addWidget(self.emptyDashSettingsWidget6, 1, 0, 1, 1)
@@ -2263,12 +2677,22 @@ class Window(QWidget):
         self.defaultBillingZipInput.setPlaceholderText("billing zip")
         self.defaultAccountButton = QPushButton("Save")
         self.defaultAccountButton.setStyleSheet(
-            "color: #000000;"
-            "background-color: #fc9803;"
-            "font-size: 15px;"
-            "padding: 5px 25px 5px 25px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                color: #000000;
+                background-color: #fc9803;
+                font-size: 15px;
+                padding: 5px 25px 5px 25px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.emptyWidget = QLabel()
         if len(settings["default account"]) > 0:
@@ -2414,7 +2838,7 @@ class Window(QWidget):
 
         self.settingsBodyBox.addLayout(self.dashboardSettingsBox)
         self.settingsBodyBox.addLayout(self.accountSettingsBox)
-        self.settingsBodyBox.addLayout(self.proxySettingsBox)
+        #self.settingsBodyBox.addLayout(self.proxySettingsBox)
 
         self.settingsFooterBox = QVBoxLayout()
         self.validLabelSettings = QLabel("Status: valid")
@@ -2427,13 +2851,24 @@ class Window(QWidget):
         self.settingsResetWebhook = QHBoxLayout()
         self.resetSettingsButton = QPushButton("Reset Settings")
         self.resetSettingsButton.setStyleSheet(
-            "color: #03c6fc;"
-            "background-color: #303030;"
-            "border: 2px solid #03c6fc;"
-            "font-size: 15px;"
-            "padding: 5px 25px 5px 25px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #303030;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 25px 5px 25px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #202020;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.webhookHBox = QHBoxLayout()
         self.webhookLabel = QLabel("Webhook")
@@ -2450,14 +2885,25 @@ class Window(QWidget):
             "border-radius: 0px;"
         )
         self.webhookInput.setPlaceholderText("discord")
+        self.webhookInput.setText(settings["webhook"])
         self.saveWebhookButton = QPushButton("save")
         self.saveWebhookButton.setStyleSheet(
-            "color: #303030;"
-            "background-color: #03c6fc;"
-            "font-size: 15px;"
-            "padding: 1px 5px 1px 5px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                color: #303030;
+                background-color: #03c6fc;
+                font-size: 15px;
+                padding: 1px 5px 1px 5px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #03b2e3;
+            }
+            QPushButton:pressed {
+                background-color: #03c6fc;
+            }
+            """
         )
         self.webhookHBox.addWidget(self.webhookLabel)
         self.webhookHBox.addWidget(self.webhookInput)
@@ -2468,13 +2914,24 @@ class Window(QWidget):
         self.settingsDownloadUpdates = QHBoxLayout()
         self.downloadUserManualButton = QPushButton("Download user manual")
         self.downloadUserManualButton.setStyleSheet(
-            "color: #03c6fc;"
-            "background-color: #303030;"
-            "border: 2px solid #03c6fc;"
-            "font-size: 15px;"
-            "padding: 5px 25px 5px 25px;"
-            "border-radius: 5px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #303030;
+                color: #03c6fc;
+                border: 2px solid #03c6fc;
+                border-radius: 5px;
+                padding: 5px 25px 5px 25px;
+                font-weight: bold;
+                font-size: 15px;
+            }
+            QPushButton::hover {
+                background-color: #202020;
+                border: 3px solid #03c6fc;
+            }
+            QPushButton:pressed {
+                background-color: #000000;
+            }
+            """
         )
         self.updatesHBox = QHBoxLayout()
         self.autoUpdatesLabel = QLabel("Automatic Updates")
@@ -2518,6 +2975,39 @@ class Window(QWidget):
         self.defaultAccountButton.clicked.connect(self.saveAccountSettings)
         self.proxySettingsButton.clicked.connect(self.saveProxySettings)
 
+        self.saveWebhookButton.clicked.connect(self.saveWebhook)
+        self.resetSettingsButton.clicked.connect(self.resetSettings)
+
+    def resetSettings(self):
+        settings_handler.set_setting("safe mode", True)
+        settings_handler.set_setting("monitor delay", 0)
+        settings_handler.set_setting("retry delay", 0)
+        settings_handler.set_setting("quick task default", ["Select Size", 0])
+        settings_handler.set_setting("default account", ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''])
+        settings_handler.set_setting("webhook", "")
+        self.safeModeCheckbox.setChecked(True)
+        self.fastModeCheckbox.setChecked(False)
+        self.monitorDelayInput.setText('0')
+        self.retryDelayInput.setText('0')
+        self.defaultSizeInput.setCurrentText("Select Size")
+        self.defaultDelayInput.setText('0')
+        self.defaultFirstNameInput.setText('')
+        self.defaultLastNameInput.setText('')
+        self.defaultEmailInput.setText('')
+        self.defaultPhoneInput.setText('')
+        self.defaultAddressInput.setText('')
+        self.defaultCityInput.setText('')
+        self.defaultStateInput.setCurrentText('Select State')
+        self.defaultZipInput.setText('')
+        self.defaultCardInput.setText('')
+        self.defaultExpInput.setText('')
+        self.defaultCVVInput.setText('')
+        self.defaultCardNameInput.setText('')
+        self.defaultBillingAddressInput.setText('')
+        self.defaultBillingCityInput.setText('')
+        self.defaultBillingStateInput.setCurrentText('Select State')
+        self.defaultBillingZipInput.setText('')
+
     def toggleSafeMode(self):
         if self.safeModeCheckbox.isChecked():
             self.fastModeCheckbox.setChecked(False)
@@ -2533,6 +3023,10 @@ class Window(QWidget):
         else:
             self.fastModeCheckbox.setChecked(False)
             self.safeModeCheckbox.setChecked(True)
+
+    def saveWebhook(self):
+        webhook = self.webhookInput.text()
+        settings_handler.set_setting("webhook", webhook)
 
     def toggleCaptchaManual(self):
         if self.manualCaptchaCheckbox.isChecked():
@@ -2601,8 +3095,7 @@ class Window(QWidget):
 
 
 def isValid():
-    with open('user_files/settings.json', 'r') as file:
-        settings = json.load(file)
+    settings = settings_handler.get_all_settings()
 
     if "valid" in settings.keys():
         if settings["valid"] == True:

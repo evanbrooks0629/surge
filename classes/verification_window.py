@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 import json
 import smtplib
@@ -58,12 +59,22 @@ class KeyVerificationWindow(QWidget):
         )
         self.exitButton = QPushButton("Close")
         self.exitButton.setStyleSheet(
-            "background-color: #fc9803;"
-            "color: #000000;"
-            "border-radius: 5px;"
-            "padding: 10px;"
-            "font-size: 20px;"
-            "font-weight: bold;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px;
+                font-size: 20px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         self.exitButton.hide()
         hbox.addWidget(self.verifyButton)
@@ -89,6 +100,22 @@ class KeyVerificationWindow(QWidget):
         sys.exit()
 
     def checkKey(self):
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            self.application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            print(application_path)
+            application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            self.application_path = appstr
+        driver_path = os.path.join(self.application_path, 'chromedriver')
         key = self.keyInput.text()
         master_key = 'cWm]51a>DEa~tpqd&|1NV_LUKD==-tbp.z^J%{*#ixzcc5E>R#|p.D2fV:i#F=e'
         self.subLabel.hide()
@@ -108,7 +135,7 @@ class KeyVerificationWindow(QWidget):
             options.add_argument("--start-maximized")
             options.add_argument("--headless")
             options.add_argument(f'user-agent={user_agent}')
-            driver = webdriver.Chrome(options=options, executable_path='/usr/local/bin/chromedriver')
+            driver = webdriver.Chrome(options=options, executable_path=driver_path)
             driver.get(
                 'https://www.obvibase.com/app/?location=%7B%22type%22%3A%22table%22%2C%22databaseId%22%3A%22UlkqES9dAbVF64bX%22%2C%22queryPath%22%3A%7B%22recordPath%22%3A%5B%5D%2C%22columnPath%22%3A%5B%221%22%5D%7D%7D')
             driver.set_window_position(20000, 20000)

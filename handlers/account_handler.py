@@ -1,29 +1,106 @@
 import json
+import sys
+import os
 
 def get_all_accounts():
-    with open("user_files/accounts.json", "r") as file:
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        application_path = application_path.split("/")
+        application_path.remove(application_path[6])
+        application_path.remove(application_path[0])
+        appstr = '/'
+        for char in application_path:
+            appstr += char + '/'
+        application_path = appstr
+    driver_path = os.path.join(application_path, 'user_files/accounts.json')
+    with open(driver_path, "r") as file:
         accounts = json.load(file)
 
     return accounts
 
 def get_account(index):
-    with open("user_files/accounts.json", "r") as file:
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        application_path = application_path.split("/")
+        application_path.remove(application_path[6])
+        application_path.remove(application_path[0])
+        appstr = '/'
+        for char in application_path:
+            appstr += char + '/'
+        application_path = appstr
+    driver_path = os.path.join(application_path, 'user_files/accounts.json')
+    with open(driver_path, "r") as file:
         accounts = json.load(file)
 
     return accounts[index]
 
 def get_num_accounts():
-    with open("user_files/accounts.json", "r") as file:
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        application_path = application_path.split("/")
+        application_path.remove(application_path[6])
+        application_path.remove(application_path[0])
+        appstr = '/'
+        for char in application_path:
+            appstr += char + '/'
+        application_path = appstr
+    driver_path = os.path.join(application_path, 'user_files/accounts.json')
+    with open(driver_path, "r") as file:
         accounts = json.load(file)
 
     return len(accounts)
 
 def insert_accounts(accounts):
-    with open("user_files/accounts.json", "w") as file:
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        application_path = application_path.split("/")
+        application_path.remove(application_path[6])
+        application_path.remove(application_path[0])
+        appstr = '/'
+        for char in application_path:
+            appstr += char + '/'
+        application_path = appstr
+    driver_path = os.path.join(application_path, 'user_files/accounts.json')
+    with open(driver_path, "w") as file:
         json.dump(accounts, file)
 
 def get_accounts_as_string():
-    with open("user_files/accounts.json", "r") as file:
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+        application_path = application_path.split("/")
+        application_path.remove(application_path[6])
+        application_path.remove(application_path[0])
+        appstr = '/'
+        for char in application_path:
+            appstr += char + '/'
+        application_path = appstr
+    driver_path = os.path.join(application_path, 'user_files/accounts.json')
+    with open(driver_path, "r") as file:
         accounts = json.load(file)
 
     accounts_list = []

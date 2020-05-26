@@ -1,5 +1,6 @@
 import time
 import sys
+import os
 import traceback
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -27,6 +28,21 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
 
     def proxy_test(self, i):
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            application_path = appstr
+        driver_path = os.path.join(application_path, 'chromedriver')
         self.proxy_list = proxy_handler.get_all_proxies()
         port = self.proxy_list[i][0]
         ip = self.proxy_list[i][1]
@@ -36,7 +52,7 @@ class Worker(QRunnable):
             chrome_options = webdriver.ChromeOptions()
             chrome_options.add_argument('--proxy-server=http://%s' % PROXY)
             chrome_options.add_argument('--headless')
-            chrome = webdriver.Chrome(options=chrome_options, executable_path='/usr/local/bin/chromedriver')
+            chrome = webdriver.Chrome(options=chrome_options, executable_path=driver_path)
             try:
                 chrome.get("http://ping-test.net/mobile/speed_test")
                 WebDriverWait(chrome, 30).until(

@@ -1,0 +1,13 @@
+Metadata-Version: 1.2
+Name: Eel
+Version: 0.11.0
+Summary: For little HTML GUI applications, with easy Python/JS interop
+Home-page: UNKNOWN
+Author: Chris Knott
+Author-email: chrisknott@hotmail.co.uk
+License: UNKNOWN
+Description: Eel is a little Python library for making simple Electron-like offline HTML/JS GUI apps, with full access to Python capabilities and libraries.
+        
+Keywords: gui,html,javascript,electron
+Platform: UNKNOWN
+Requires-Python: >=2.6

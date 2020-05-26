@@ -1,8 +1,9 @@
 Color pallette:
-    - white: #ffffff
-    - black: #000000
-    - blue: #03c6fc
-    - orange: #fc9803
+    - white: #ffffff :hover: #dcdcdc
+    - black: #000000 :hover: #101010
+    - blue: #03c6fc :hover: #03b2e3
+    - orange: #fc9803 :hover: #e38902
+    - outline :hover: #101010
 
 Font: Moon (use bold for headings, light for normal text)
 

@@ -5,6 +5,13 @@ QLabel#versionLabel {
     font-weight: bold
 }
 
+QLabel#userLabel {
+    background-color: #303030;
+    color: #00FF00;
+    font-size: 15px;
+    font-weight: bold;
+}
+
 QTabWidget::pane { /* The tab widget frame */
     border-top: 2px solid #000000;
     border-bottom: #000000;

@@ -3,6 +3,8 @@ from PyQt5.QtGui import *
 
 from handlers import task_handler
 
+import sys, os
+
 
 class EditTaskWindow(QWidget):
     def __init__(self, indexes, product, size, delay):
@@ -22,6 +24,20 @@ class EditTaskWindow(QWidget):
         self.UI()
 
     def UI(self):
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+            application_path = application_path.split("/")
+            application_path.remove(application_path[6])
+            application_path.remove(application_path[0])
+            appstr = '/'
+            for char in application_path:
+                appstr += char + '/'
+            application_path = appstr
         layout = QGridLayout()
         layout.setColumnStretch(1, 4)
         layout.setColumnStretch(2, 4)
@@ -127,15 +143,26 @@ class EditTaskWindow(QWidget):
         layout.addWidget(self.delayInput, 3, 1, 1, 2)
 
         self.editTasksButton = QPushButton("    Edit Task")
-        self.editTasksButton.setIcon(QIcon("images/iconeditblack.icns"))
+        img_path = os.path.join(application_path, 'images/iconeditblack.icns')
+        self.editTasksButton.setIcon(QIcon(img_path))
         self.editTasksButton.setStyleSheet(
-            "color: #000000;"
-            "font-size: 20px;"
-            "font-weight: bold;"
-            "background-color: #fc9803;"
-            "padding: 10px 20px 10px 20px;"
-            "border-radius: 5px;"
-            "margin-bottom: 0px;"
+            """
+            QPushButton {
+                background-color: #fc9803;
+                color: #000000;
+                border-radius: 5px;
+                padding: 10px 20px 10px 20px;
+                font-weight: bold;
+                font-size: 20px;
+                margin-bottom: 0px;
+            }
+            QPushButton::hover {
+                background-color: #e38902;
+            }
+            QPushButton:pressed {
+                background-color: #fc9803;
+            }
+            """
         )
         layout.addWidget(self.editTasksButton, 6, 0, 1, 3)
         self.setLayout(layout)

@@ -1,0 +1,4 @@
+[console_scripts]
+auto-py-to-exe = auto_py_to_exe.__main__:run
+autopytoexe = auto_py_to_exe.__main__:run
+
